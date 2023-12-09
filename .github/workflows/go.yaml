@@ -5,25 +5,41 @@ name: Go
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: root
+          POSTGRES_DB: simple_bank
+        ports:
+          - 5432:5432
     steps:
-    -   name: Checkout code into go mod repository
+      - name: Checkout code into go mod repository
         uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21.3'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.3"
 
-    - name: Build
-      run: go build -v ./...
+      - name: Install Golang Migration
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate.linux-amd64 /usr/bin/migrate
 
-    - name: Test
-      run: make test
+      - name: Run Migration
+        run: make migrate-up
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: make test
