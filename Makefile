@@ -19,6 +19,9 @@ migrate-up:
 migrate-down:
 	migrate -path db/migration -database "postgresql://root:postgres@localhost:5432/simple_bank?sslmode=disable" --verbose down
 
+mock:
+	mockgen -package mockdb --destination db/mock/store.go github.com/indramhrt/simplebank/db/sqlc Store
+
 sqlc:
 	sqlc generate
 

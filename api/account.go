@@ -91,11 +91,33 @@ func (server *Server) deleteAccount(ctx *gin.Context) {
 		return
 	}
 
-	accountID, err := server.store.Queries.DeleteAccount(ctx, req.ID)
+	accountID, err := server.store.DeleteAccount(ctx, req.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"id": accountID})
+}
+
+type transferMoneyRequest struct {
+	FromAccountID int64 `json:"from_account_id" binding:"required,min=1"`
+	ToAccountID   int64 `json:"to_account_id" binding:"required,min=1"`
+	Amount        int64 `json:"amount" binding:"required,min=1"`
+}
+
+func (server *Server) transferMoney(ctx *gin.Context) {
+	var req transferMoneyRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	result, err := server.store.TransferTx(ctx, db.TransferTxParams(req))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
 }
