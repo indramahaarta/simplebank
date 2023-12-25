@@ -34,7 +34,7 @@ func TestGetAccountAPI(t *testing.T) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatch(t, recorder.Body, account)
+				requireBodyMatchAccount(t, recorder.Body, account)
 			},
 		},
 		{
@@ -45,7 +45,7 @@ func TestGetAccountAPI(t *testing.T) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
-				requireBodyMatch(t, recorder.Body, db.Account{})
+				requireBodyMatchAccount(t, recorder.Body, db.Account{})
 			},
 		},
 		{
@@ -56,7 +56,7 @@ func TestGetAccountAPI(t *testing.T) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
-				requireBodyMatch(t, recorder.Body, db.Account{})
+				requireBodyMatchAccount(t, recorder.Body, db.Account{})
 			},
 		},
 		{
@@ -67,7 +67,7 @@ func TestGetAccountAPI(t *testing.T) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
-				requireBodyMatch(t, recorder.Body, db.Account{})
+				requireBodyMatchAccount(t, recorder.Body, db.Account{})
 			},
 		},
 	}
@@ -109,7 +109,7 @@ func createRandomAccount() db.Account {
 	}
 }
 
-func requireBodyMatch(t *testing.T, body *bytes.Buffer, account db.Account) {
+func requireBodyMatchAccount(t *testing.T, body *bytes.Buffer, account db.Account) {
 	data, err := ioutil.ReadAll(body)
 	require.NoError(t, err)
 

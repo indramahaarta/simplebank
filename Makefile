@@ -23,7 +23,7 @@ mock:
 	mockgen -package mockdb --destination db/mock/store.go github.com/indramhrt/simplebank/db/sqlc Store
 
 sqlc:
-	sqlc generate
+	sqlc generate && make mock
 
 server:
 	go run main.go
