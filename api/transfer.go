@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/indramhrt/simplebank/db/sqlc"
+	"github.com/indramhrt/simplebank/token"
 )
 
 type transferMoneyRequest struct {
@@ -27,12 +28,26 @@ func (server *Server) transferMoney(ctx *gin.Context) {
 		ToAccountID:   req.ToAccountID,
 		Amount:        req.Amount,
 	}
-
-	if !server.validAccount(ctx, arg.FromAccountID, req.Currency) {
+	account, valid := server.validAccount(ctx, arg.FromAccountID, req.Currency)
+	if !valid {
 		return
 	}
 
-	if !server.validAccount(ctx, arg.ToAccountID, req.Currency) {
+	_, valid = server.validAccount(ctx, arg.ToAccountID, req.Currency)
+	if !valid {
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if authPayload.Username != account.Owner {
+		error := errors.New("you dont't have any authorization for this resource")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(error))
+		return
+	}
+
+	if account.Balance < req.Amount {
+		error := errors.New("you don't have enough balance")
+		ctx.JSON(http.StatusBadRequest, errorResponse(error))
 		return
 	}
 
@@ -46,22 +61,22 @@ func (server *Server) transferMoney(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency string) bool {
+func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency string) (*db.Account, bool) {
 	account, err := server.store.GetAccount(ctx, accountID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, err)
-			return false
+			return nil, false
 		}
 
 		ctx.JSON(http.StatusInternalServerError, err)
-		return false
+		return nil, false
 	}
 
 	if account.Currency != currency {
 		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("currency mismatch error")))
-		return false
+		return nil, false
 	}
 
-	return true
+	return &account, true
 }

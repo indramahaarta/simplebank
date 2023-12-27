@@ -2,10 +2,12 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/indramhrt/simplebank/db/sqlc"
+	"github.com/indramhrt/simplebank/token"
 	"github.com/lib/pq"
 )
 
@@ -21,8 +23,10 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		Owner:    authPayload.Username,
 		Currency: req.Currency,
 		Balance:  0,
 	}
@@ -64,6 +68,12 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if authPayload.Username != account.Owner {
+		error := errors.New("you don't have any auhtorization to access this resource")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(error))
+	}
+
 	ctx.JSON(http.StatusOK, account)
 }
 
@@ -79,7 +89,9 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		return
 	}
 
-	accounts, err := server.store.ListAccounts(ctx, db.ListAccountsParams{Limit: int32(req.PageSize), Offset: int32((req.PageID - 1) * req.PageSize)})
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	accounts, err := server.store.ListAccounts(ctx, db.ListAccountsParams{Owner: authPayload.Username, Limit: int32(req.PageSize), Offset: int32((req.PageID - 1) * req.PageSize)})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

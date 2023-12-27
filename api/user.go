@@ -117,5 +117,5 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		User:        *returnUserResponse(&user),
 	}
 
-	ctx.JSON(http.StatusAccepted, rsp)
+	ctx.JSON(http.StatusOK, rsp)
 }
